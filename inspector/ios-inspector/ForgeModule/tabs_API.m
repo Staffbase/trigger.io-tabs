@@ -9,7 +9,7 @@
 #import "tabs_API.h"
 #import "tabs_modalWebViewController.h"
 
-static NSMutableDictionary* tabs_modal_map;
+static NSMutableDictionary<NSString*, NSValue*> *tabs_modal_map;
 
 @implementation tabs_API
 
@@ -125,21 +125,53 @@ static NSMutableDictionary* tabs_modal_map;
         tabs_modal_map = [[NSMutableDictionary alloc] init];
     }
     [tabs_modal_map setObject:[NSValue valueWithNonretainedObject:modalView] forKey:task.callid];
+    modalView.releaseHandler = ^{
+        [ForgeLog d:[NSString stringWithFormat:@"Deleting tab with callid:%@ url:%@", task.callid, task.params[@"url"]]];
+        tabs_modal_map[task.callid] = nil;
+    };
 }
 
 
 + (void)executeJS:(ForgeTask*)task modal:(NSString*)modal script:(NSString*)script {
-    [[((NSValue *)[tabs_modal_map objectForKey:modal]) nonretainedObjectValue] stringByEvaluatingJavaScriptFromString:task string:script];
+    NSValue *value = [tabs_modal_map objectForKey:modal];
+    
+    if (value == nil) {
+        [task error:[NSString stringWithFormat:@"No tab found with callid: %@", modal]];
+        return;
+    }
+    
+    tabs_modalWebViewController *viewController = [value nonretainedObjectValue];
+
+    [viewController stringByEvaluatingJavaScriptFromString:task string:script];
 }
 
 
 + (void)close:(ForgeTask*)task modal:(NSString*)modal {
-    [[((NSValue *)[tabs_modal_map objectForKey:modal]) nonretainedObjectValue] close];
+    NSValue *value = [tabs_modal_map objectForKey:modal];
+    
+    if (value == nil) {
+        [task error:[NSString stringWithFormat:@"No tab found with callid: %@", modal]];
+        return;
+    }
+    
+    tabs_modalWebViewController *viewController = [value nonretainedObjectValue];
+
+    [viewController close];
     [task success:nil];
 }
 
 
 + (void)addButton:(ForgeTask*)task modal:(NSString*)modal params:(NSDictionary*)params {
+    NSValue *value = [tabs_modal_map objectForKey:modal];
+    
+    if (value == nil) {
+        [task error:[NSString stringWithFormat:@"No tab found with callid: %@", modal]];
+        return;
+    }
+    
+    tabs_modalWebViewController *viewController = [value nonretainedObjectValue];
+
+    
     NSString* text = nil;
     NSString* icon = nil;
     NSString* position = nil;
@@ -166,17 +198,35 @@ static NSMutableDictionary* tabs_modal_map;
                                alpha:[(NSNumber*)[array objectAtIndex:3] floatValue]/255];
     }
 
-    [[((NSValue *)[tabs_modal_map objectForKey:modal]) nonretainedObjectValue] addButtonWithTask:task text:text icon:icon position:position style:style tint:tint];
+    [viewController addButtonWithTask:task text:text icon:icon position:position style:style tint:tint];
 }
 
 
 + (void)removeButtons:(ForgeTask*)task modal:(NSString*)modal {
-    [[((NSValue *)[tabs_modal_map objectForKey:modal]) nonretainedObjectValue] removeButtonsWithTask:task];
+    NSValue *value = [tabs_modal_map objectForKey:modal];
+    
+    if (value == nil) {
+        [task error:[NSString stringWithFormat:@"No tab found with callid: %@", modal]];
+        return;
+    }
+    
+    tabs_modalWebViewController *viewController = [value nonretainedObjectValue];
+
+    [viewController removeButtonsWithTask:task];
 }
 
 
 + (void)setTitle:(ForgeTask*)task modal:(NSString*)modal title:(NSString*)title {
-    [[((NSValue *)[tabs_modal_map objectForKey:modal]) nonretainedObjectValue] setTitleWithTask:task title:title];
+    NSValue *value = [tabs_modal_map objectForKey:modal];
+    
+    if (value == nil) {
+        [task error:[NSString stringWithFormat:@"No tab found with callid: %@", modal]];
+        return;
+    }
+    
+    tabs_modalWebViewController *viewController = [value nonretainedObjectValue];
+
+    [viewController setTitleWithTask:task title:title];
 }
 
 @end

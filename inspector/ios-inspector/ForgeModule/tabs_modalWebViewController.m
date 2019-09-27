@@ -262,10 +262,12 @@ static UIBarButtonItem *reload = nil;
     // release our connection delegate so it can be garbage collected
     [connectionDelegate releaseDelegate];
     connectionDelegate = nil;
-
+    
     if (returnObj != nil) {
         [[ForgeApp sharedApp] event:[NSString stringWithFormat:@"tabs.%@.closed", task.callid] withParam:returnObj];
     }
+    
+    self.releaseHandler();
 }
 
 

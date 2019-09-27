@@ -48,6 +48,7 @@
 @property (strong, nonatomic) IBOutlet NSNumber* enableBasicAuth;
 @property (strong, nonatomic) IBOutlet NSNumber* enableInsecureBasicAuth;
 @property (strong, nonatomic) IBOutlet UINavigationItem *navigationItem;
+@property (nonatomic, copy, nonnull) void (^releaseHandler)(void);
 
 - (void)setUrl:(NSURL*)newUrl;
 - (void)setRootView:(UIViewController*)newRootView;
